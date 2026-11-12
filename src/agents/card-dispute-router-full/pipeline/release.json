@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "agent": "card-dispute-router",
+  "pattern": "router-specialists",
+  "router": true,
+  "adapter": "unconfigured",
+  "dataset_path": "evals/evals.yaml",
+  "judge_model": "",
+  "evaluators": [],
+  "min_pass_rate": null,
+  "case_count": 0,
+  "dataset_status": "proposed",
+  "tools": [],
+  "blockers": [
+    "evaluation is unconfigured: judge model, evaluators, threshold and approved cases are required",
+    "evaluation.judge_model is unconfigured",
+    "evaluation.min_pass_rate is unconfigured",
+    "evaluation.evaluators is unconfigured",
+    "evaluation dataset is not approved"
+  ]
+}

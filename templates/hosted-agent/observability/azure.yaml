@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+# Hosted agent (Agent Framework, Responses 2.0.0) with OpenTelemetry, SCBX shape. Adapted from
+# microsoft-foundry/foundry-samples (MIT) python/hosted-agents/agent-framework/responses/08-observability.
+# Differences: no model deployment (models come from the gateway), gateway env vars, and
+# ENABLE_SENSITIVE_DATA is false (R7). See templates/_gateway/GATEWAY-CONTRACT.md.
+
+requiredVersions:
+  azd: '>=1.27.1'
+  extensions:
+    azure.ai.agents: '>=1.0.0-beta.9'
+name: scbx-hosted-observability
+services:
+  ai-project:
+    host: azure.ai.project
+  scbx-hosted-observability:
+    host: azure.ai.agent
+    project: src/agent
+    language: python
+    codeConfiguration:
+      runtime: python_3_13
+      entryPoint: main.py
+    uses:
+      - ai-project
+    kind: hosted
+    name: scbx-hosted-observability
+    displayName: SCBX Hosted Agent (Observability)
+    description: Agent Framework agent with OpenTelemetry tracing that reaches its model through the AI Gateway.
+    protocols:
+      - protocol: responses
+        version: 2.0.0
+    env:
+      PYTHONNOUSERSITE: "1"
+      GATEWAY_MODELS_BASE_URL: ${GATEWAY_MODELS_BASE_URL}
+      GATEWAY_MODEL_NAME: ${GATEWAY_MODEL_NAME}
+      GATEWAY_TOKEN_SCOPE: ${GATEWAY_TOKEN_SCOPE}
+      ENABLE_INSTRUMENTATION: 'true'
+      # Prompts and responses stay in the PortCo; never record content in traces (R7, 08).
+      # BOTH lines are needed. The hosting package reads the OTEL variable and defaults it to
+      # "true"; it ignores ENABLE_SENSITIVE_DATA (verified against hosting 1.0.0b261106).
+      OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT: 'false'
+      ENABLE_SENSITIVE_DATA: 'false'
+    container:
+      resources:
+        cpu: '0.5'
+        memory: 1Gi
+infra:
+  provider: microsoft.foundry

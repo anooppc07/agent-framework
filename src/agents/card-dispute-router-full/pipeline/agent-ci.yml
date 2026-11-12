@@ -1,0 +1,31 @@
+# Adapted from github.com/DeepuMM/agent-deployment @ 2220a3c2e3964728aef4444048944db0ebf41ecc
+# (.github/workflows/agent-ci.yml). That repository has no license file; reuse of its design was
+# approved by the person running this skill (verbally, not in writing); confirm with the repository's author.
+#
+# Pull request validation for card-dispute-router. Validation only: read-only token, no Azure login, no
+# secrets or repository variables, no deployment. This file is a template; creating the agent does not
+# install it. To use it, copy it to the repository's .github/workflows/ (see README.md in this folder).
+name: agent-ci-card-dispute-router
+
+on:
+  pull_request:
+    paths: ["src/agents/card-dispute-router/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/agents/card-dispute-router
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Session manager is not bypassed
+        run: python preflight.py main.py
+      - name: Validate the release configuration and project files
+        run: python pipeline/hosted_pipeline.py validate --root .

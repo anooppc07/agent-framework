@@ -1,0 +1,76 @@
+# Adapted from github.com/DeepuMM/agent-deployment @ 2220a3c2e3964728aef4444048944db0ebf41ecc
+# (.github/workflows/agent-deploy.yml). That repository has no license file; reuse of its design was
+# approved by the person running this skill (verbally, not in writing); confirm with the repository's author. The reference deploys on push to main; this template does not.
+#
+# Release card-dispute-router: build a NON-SERVING candidate, evaluate that exact candidate, promote only on
+# complete passing evidence, then smoke the serving target. Manual dispatch only: there is deliberately
+# no push, pull-request, schedule or workflow_run trigger, and creating the agent never installs or
+# dispatches this file. Run it from the Actions tab ("Run workflow") or by asking the deploy skill.
+# Anyone allowed to dispatch workflows in the repository can still run it; protect the GitHub
+# environment with required reviewers.
+#
+# STATUS: BLOCKED until a reviewed lifecycle adapter is configured. The default adapter cannot create a
+# non-serving candidate or identify a promotion boundary, so the `check` step below exits 3 before any
+# Azure login. See README.md in this folder.
+name: agent-deploy-card-dispute-router
+
+on:
+  workflow_dispatch:
+    inputs:
+      agent:
+        description: Agent to release; must be card-dispute-router
+        required: true
+        type: string
+      environment:
+        description: GitHub environment to release to
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: agent-deploy-${{ inputs.agent }}-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    defaults:
+      run:
+        working-directory: src/agents/card-dispute-router
+    env:
+      RELEASE_AGENT: ${{ inputs.agent }}
+      RELEASE_ENVIRONMENT: ${{ inputs.environment }}
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      FOUNDRY_PROJECT_ENDPOINT: ${{ vars.FOUNDRY_PROJECT_ENDPOINT }}
+      AZURE_AI_MODEL_DEPLOYMENT_NAME: ${{ vars.AZURE_AI_MODEL_DEPLOYMENT_NAME }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Session manager is not bypassed
+        run: python preflight.py main.py
+      - name: Check the release can be made safe (exits 3 = BLOCKED, before any Azure login)
+        run: python pipeline/hosted_pipeline.py check --root . --agent "$RELEASE_AGENT" --environment "$RELEASE_ENVIRONMENT"
+      - name: Azure login with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Release (candidate, evaluate, gate, promote, smoke)
+        run: python pipeline/hosted_pipeline.py release --root . --agent "$RELEASE_AGENT" --environment "$RELEASE_ENVIRONMENT"
+      - name: Upload the release report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-report-card-dispute-router
+          path: src/agents/card-dispute-router/.pipeline/release-report.json
+          if-no-files-found: ignore
+          retention-days: 30

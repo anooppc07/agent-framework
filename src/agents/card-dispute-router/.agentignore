@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.azure/
+evals/
+preflight.py
+tests/
+run_routing_evaluation.py
+docs/
+pipeline/
+agent-spec.json
+scaffold-metadata.json

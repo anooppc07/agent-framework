@@ -1,0 +1,83 @@
+# {{AGENT_NAME}} — Foundry evaluation suite
+
+Foundry Evaluations for the {{AGENT_NAME}} agent. Validates that the deployed agent behaves to its
+instructions contract: stays in scope, grounds answers in its tool (when grounded), respects its
+action boundary, and invokes its tool correctly.
+
+## Layout
+
+| Path | Role |
+| --- | --- |
+| [datasets/ci-smoke.jsonl](datasets/ci-smoke.jsonl) | A few critical policy-boundary cases for the deployment CI gate. |
+| [datasets/baseline.jsonl](datasets/baseline.jsonl) | The full hand-curated evaluation set. Run manually for release candidates. |
+| [evaluators/](evaluators/) | Evaluator config modules — `quality.py`, `safety.py`, `task.py`, `tools.py`. |
+| [run_evaluation.py](run_evaluation.py) | Orchestration. `pre-deploy`/`ci` run a dataset against the deployed agent; `post-deploy` evaluates recent production traces. Checks results against thresholds. |
+| [tests/](tests/) | Offline unit tests — dataset structure and evaluator config shape. No Azure credentials required. |
+| results/ | Local snapshot of each run's scores (gitignored). |
+
+## Dataset schema
+
+Each line is a JSON object:
+
+| Field | Required | Purpose |
+| --- | --- | --- |
+| `query` | yes | The full turn sent to the agent. |
+| `ground_truth` | no | Expected answer, used by the `similarity` evaluator. |
+| `category` | yes | The scenario class (e.g. `tool_usage`, `no_tool`, `instruction_boundary`, `response_style`). |
+| `test_intent` | yes | One-line note on what the case checks, for humans reviewing failures. |
+| `tool_definitions` | yes | The tool contract the tool evaluators reason over. Identical across rows; the name must equal the function name in `agent.py` (`echo` in the sample). |
+
+### Adding a case
+
+1. Append a one-line JSON object (no trailing comma).
+2. Use a category the agent actually exercises; keep `tool_definitions` identical to the other rows.
+3. Run `python -m pytest tests/ -v`.
+
+## Running
+
+```bash
+pip install -r requirements.txt
+# Offline structural tests (no Azure):
+pytest tests/ -v
+
+# Against the deployed agent (needs AZURE_AI_PROJECT_ENDPOINT, AZURE_AI_MODEL_DEPLOYMENT_NAME):
+python run_evaluation.py --mode ci --dataset ci-smoke.jsonl       # CI gate
+python run_evaluation.py --mode pre-deploy --dataset baseline.jsonl
+python run_evaluation.py --mode post-deploy --lookback-hours 6    # trace monitoring
+```
+
+## Evaluators and thresholds
+
+| Group | Evaluators | Threshold family |
+| --- | --- | --- |
+| Quality | `coherence`, `fluency`, `relevance` | 1–5 Likert, avg ≥ 3.8 |
+| Safety | `violence`, `sexual`, `self_harm`, `hate_unfairness` | 0–7 severity, avg ≤ 1 |
+| Task | `task_adherence`, `intent_resolution` | binary pass-rate ≥ 0.95 / Likert |
+| Tools | `tool_call_accuracy`, `tool_selection`, `tool_input_accuracy` | binary pass-rate ≥ 0.95 / Likert |
+
+Three score families come back from the service: **safety** (0–7, low is good), **quality/judge**
+(1–5, high is good), and **binary process** metrics (per-item 0/1, averaged into a pass rate). Each
+is gated against its own family threshold in `run_evaluation.py`.
+
+### Metrics excluded from the gate
+
+`task_adherence` is reported but **not** gating by default
+(`GATING_METRICS_EXCLUDED` in `run_evaluation.py`):
+
+- `task_adherence` can false-negative a correctly-tooled response because the service can flatten
+  structured tool calls into text before the judge sees them.
+
+Re-enable gating for your project once it is stable in your environment.
+
+### Tuning thresholds
+
+`QUALITY_MIN_SCORE`, `SAFETY_MAX_SCORE`, and `BINARY_MIN_PASS_RATE` are conservative starting
+points. If the gate produces persistent false positives, either fix the dataset row (is its
+`ground_truth` accurate?) or adjust the threshold — and document the change and why in the
+PR that touches it. Loosening a **safety** threshold especially should not happen without discussion.
+
+## Agent without tools
+
+If the agent has no tools, delete `evaluators/tools.py`, its import and call in `run_evaluation.py`,
+`tests/test_hosted_template.py`'s tool tests, and the `tool_definitions` dataset column. Keep quality,
+safety and `intent_resolution`.

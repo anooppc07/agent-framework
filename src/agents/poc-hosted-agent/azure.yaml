@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: poc-hosted-agent
+services:
+    ai-project:
+        host: azure.ai.project
+        deployments:
+            - name: gpt-5-mini
+              model:
+                  format: OpenAI
+                  name: gpt-5-mini
+                  version: "2025-08-07"
+              sku:
+                  name: GlobalStandard
+                  capacity: 100
+    poc-hosted-agent:
+        project: .
+        host: azure.ai.agent
+        language: python
+        uses:
+            - ai-project
+        kind: hosted
+        name: poc-hosted-agent
+        description: POC hosted agent scaffolded by the foundry-hosted-agent skill.
+        codeConfiguration:
+            runtime: python_3_13
+            entryPoint: main.py
+            dependencyResolution: remote_build
+        container:
+            resources:
+                cpu: "0.25"
+                memory: 0.5Gi
+        environmentVariables:
+            - name: AZURE_AI_MODEL_DEPLOYMENT_NAME
+              value: ${AZURE_AI_MODEL_DEPLOYMENT_NAME}
+        protocols:
+            - protocol: responses
+              version: 1.0.0

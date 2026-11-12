@@ -1,0 +1,5 @@
+# Declared dependencies for the generated evaluation tree (run the tests with these installed).
+azure-ai-projects>=2.9.0
+azure-identity>=1.15.0
+pyyaml>=6.0
+pytest>=8

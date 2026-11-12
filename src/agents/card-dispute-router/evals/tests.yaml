@@ -1,0 +1,16 @@
+# Smoke intent for card-dispute-router (fields as in github.com/DeepuMM/agent-deployment @ 2220a3c2e3964728aef4444048944db0ebf41ecc: input, must_contain_any).
+# This is NOT a security, financial-policy or multi-turn correctness gate: substring matching can pass
+# a wrong answer. Add explicit domain and negative checks before relying on it. Left empty, a smoke
+# check has nothing to assert (UNCONFIGURED): approve expected phrases per case.
+- case_id: "c001"
+  input: "I was charged twice at the same restaurant on Friday."
+  expected_route: "dispute-intake"
+  must_contain_any: []
+- case_id: "c002"
+  input: "There is a charge from a shop I have never visited."
+  expected_route: "fraud-report"
+  must_contain_any: []
+- case_id: "c003"
+  input: "What is the weather in Paris tomorrow?"
+  expected_route: "refusal"
+  must_contain_any: []

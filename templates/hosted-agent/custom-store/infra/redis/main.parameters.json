@@ -1,0 +1,12 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "privateEndpointSubnetId": {
+      "value": "${PRIVATE_ENDPOINT_SUBNET_ID}"
+    },
+    "privateDnsZoneId": {
+      "value": "${REDIS_PRIVATE_DNS_ZONE_ID}"
+    }
+  }
+}

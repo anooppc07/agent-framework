@@ -1,0 +1,39 @@
+{
+  "phase": "phase-1-local",
+  "mode": "create-new",
+  "pattern": "router-specialists",
+  "agent_kind": "hosted",
+  "framework": "maf",
+  "entrypoint": "main.py",
+  "template": {
+    "name": "router-specialists",
+    "source": "hosted/patterns/router-specialists"
+  },
+  "selection": {
+    "agent_kind": "hosted",
+    "pattern": "router-specialists",
+    "framework": "maf",
+    "confirmation": "user-confirmed"
+  },
+  "rationale": "Dispute intake and suspected-fraud reports are independent topics, so separate specialists answer each.",
+  "recommendation": {
+    "pattern": "router-specialists",
+    "why": "Dispute intake and fraud reports are independent topics, so one specialist per request fits; no hand-over of control is needed."
+  },
+  "session_manager": {
+    "required": "enabled",
+    "declared": "enabled",
+    "observed": "not-observed"
+  },
+  "evaluation": "unconfigured",
+  "pipeline": "selected-not-executed",
+  "deployment": {
+    "performed": false,
+    "note": "Creation never deploys, installs a workflow or calls Azure."
+  },
+  "pending_phase_2": [
+    "effective Foundry session-manager enablement and multi-turn continuity",
+    "restart persistence and user/tenant isolation",
+    "live evaluation, promotion evidence and (for routers) candidate-scoped route evidence"
+  ]
+}

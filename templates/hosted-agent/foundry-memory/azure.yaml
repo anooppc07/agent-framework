@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+# Hosted agent (Agent Framework, Responses 2.0.0) with a Foundry Memory Store, SCBX shape. Adapted from
+# microsoft-foundry/foundry-samples (MIT) agent-framework/responses/13-foundry-memory.
+# The agent's model call goes through the AI Gateway. The two deployments below are used ONLY by the memory
+# store inside the account: a documented exception (templates/_gateway/GATEWAY-CONTRACT.md) needing DataX sign-off.
+
+requiredVersions:
+  azd: '>=1.27.1'
+  extensions:
+    azure.ai.agents: '>=1.0.0-beta.9'
+name: scbx-hosted-foundry-memory
+services:
+  ai-project:
+    host: azure.ai.project
+    deployments:
+      - name: ${AZURE_AI_MODEL_DEPLOYMENT_NAME}
+        model:
+          format: OpenAI
+          name: ${MEMORY_CHAT_MODEL}
+          version: ${MEMORY_CHAT_MODEL_VERSION}
+        sku:
+          name: GlobalStandard
+          capacity: 10
+      - name: ${AZURE_AI_EMBEDDING_MODEL_DEPLOYMENT_NAME}
+        model:
+          format: OpenAI
+          name: ${MEMORY_EMBEDDING_MODEL}
+          version: ${MEMORY_EMBEDDING_MODEL_VERSION}
+        sku:
+          name: GlobalStandard
+          capacity: 10
+  scbx-hosted-foundry-memory:
+    host: azure.ai.agent
+    project: src/agent
+    language: python
+    codeConfiguration:
+      runtime: python_3_13
+      entryPoint: main.py
+    uses:
+      - ai-project
+    kind: hosted
+    name: scbx-hosted-foundry-memory
+    displayName: SCBX Hosted Agent (Foundry Memory)
+    description: Agent Framework agent with per-user semantic memory from a Foundry Memory Store; model calls go through the AI Gateway.
+    protocols:
+      - protocol: responses
+        version: 2.0.0
+    env:
+      PYTHONNOUSERSITE: "1"
+      GATEWAY_MODELS_BASE_URL: ${GATEWAY_MODELS_BASE_URL}
+      GATEWAY_MODEL_NAME: ${GATEWAY_MODEL_NAME}
+      GATEWAY_TOKEN_SCOPE: ${GATEWAY_TOKEN_SCOPE}
+      MEMORY_STORE_NAME: ${MEMORY_STORE_NAME}
+      OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT: 'false'
+      ENABLE_SENSITIVE_DATA: 'false'
+    container:
+      resources:
+        cpu: '0.5'
+        memory: 1Gi
+hooks:
+  # Creates the memory store after provisioning. Idempotent: an existing store is left alone.
+  postprovision:
+    posix:
+      shell: sh
+      run: src/agent/hooks/postprovision.sh
+      interactive: true
+    windows:
+      shell: pwsh
+      run: src/agent/hooks/postprovision.ps1
+      interactive: true
+infra:
+  provider: microsoft.foundry

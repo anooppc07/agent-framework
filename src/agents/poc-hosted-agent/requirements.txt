@@ -1,0 +1,11 @@
+langchain-azure-ai[hosting]>=1.2.4
+# Required transitively by langchain-azure-ai; declared so uv can resolve the prerelease.
+azure-ai-contentunderstanding>=1.2.0b2
+azure-ai-projects
+azure-identity
+langchain
+langchain-core
+langchain-openai
+langgraph
+python-dotenv
+httpx<1

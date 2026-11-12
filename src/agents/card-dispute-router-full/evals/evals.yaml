@@ -1,0 +1,20 @@
+# Canonical release-evaluation intent for card-dispute-router. Fields follow github.com/DeepuMM/agent-deployment @ 2220a3c2e3964728aef4444048944db0ebf41ecc.
+# The JSONL files under datasets/ are derived from this plan; edit the spec, not them.
+agent: "card-dispute-router"
+pattern: "router-specialists"
+judge_model: null  # UNCONFIGURED: set the judge deployment; the gate blocks until then
+min_pass_rate: null  # UNCONFIGURED: set the approved threshold; the gate blocks until then
+evaluators: []  # UNCONFIGURED: list the evaluators to gate on
+dataset_status: "proposed"
+routes: ["dispute-intake", "fraud-report", "refusal"]
+smoke: ["c001", "c002", "c003"]
+dataset:
+  - case_id: "c001"
+    query: "I was charged twice at the same restaurant on Friday."
+    expected_route: "dispute-intake"
+  - case_id: "c002"
+    query: "There is a charge from a shop I have never visited."
+    expected_route: "fraud-report"
+  - case_id: "c003"
+    query: "What is the weather in Paris tomorrow?"
+    expected_route: "refusal"

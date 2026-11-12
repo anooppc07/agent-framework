@@ -1,0 +1,4 @@
+system-certs = true
+# Packages come only from the DataX feed (KB 07: @Release view; PyPI is blocked at the firewall).
+# Set UV_DEFAULT_INDEX to the feed URL instead of committing it here. No uv.lock is committed on
+# purpose: a lock would pin PyPI URLs. Generate one against the feed: UV_DEFAULT_INDEX=... uv lock

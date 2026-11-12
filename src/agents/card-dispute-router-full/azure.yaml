@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: card-dispute-router
+services:
+    ai-project:
+        host: azure.ai.project
+        deployments:
+            - name: "gpt-5-mini"
+              model:
+                  format: OpenAI
+                  name: "gpt-5-mini"
+                  version: "2026-03-05"
+              sku:
+                  name: GlobalStandard
+                  capacity: 100
+    card-dispute-router:
+        project: .
+        host: azure.ai.agent
+        language: python
+        uses:
+            - ai-project
+        kind: hosted
+        name: card-dispute-router
+        description: "Helps cardholders describe a card dispute or report a transaction they do not recognise."
+        codeConfiguration:
+            runtime: python_3_13
+            entryPoint: main.py
+            dependencyResolution: remote_build
+        container:
+            resources:
+                cpu: "0.25"
+                memory: "0.5Gi"
+        environmentVariables:
+            - name: AZURE_AI_MODEL_DEPLOYMENT_NAME
+              value: ${AZURE_AI_MODEL_DEPLOYMENT_NAME}
+        protocols:
+            - protocol: responses
+              version: 2.0.0

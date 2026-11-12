@@ -1,0 +1,31 @@
+{
+  "$comment": [
+    "{{AGENT_NAME}} — declarative Foundry prompt agent (kind: prompt).",
+    "",
+    "This file is the request body for POST {project-endpoint}/agents?api-version=v1. The nested",
+    "`definition` object is also the body of POST .../agents/{{AGENT_NAME}}/versions?api-version=v1",
+    "when publishing a new version. `instructions` is injected from instructions.md and the",
+    "__PLACEHOLDER__ values are substituted, both by scripts/deploy-agent.ps1.",
+    "",
+    "Grounding is wired through the `tools` array below. See the skill's references/tool-shapes.md",
+    "for the exact block per grounding type. Keep connection ids, server URLs, and keys as",
+    "__DEPLOY_TIME__ placeholders — never hardcode a real value here."
+  ],
+  "name": "{{AGENT_NAME}}",
+  "description": "{{AGENT_DESCRIPTION}}",
+  "metadata": {
+    "project": "{{PROJECT}}",
+    "surface": "{{SURFACE}}"
+  },
+  "definition": {
+    "kind": "prompt",
+    "model": "__AZURE_AI_MODEL_DEPLOYMENT_NAME__",
+    "instructions": "__INSTRUCTIONS__",
+    "reasoning": {
+      "effort": "{{REASONING_EFFORT}}"
+    },
+    "tools": [
+      {{TOOLS_BLOCK}}
+    ]
+  }
+}

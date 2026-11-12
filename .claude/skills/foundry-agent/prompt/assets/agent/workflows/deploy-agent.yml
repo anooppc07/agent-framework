@@ -1,0 +1,125 @@
+name: Deploy {{AGENT_NAME}}
+
+# CI/CD for {{AGENT_NAME}}, a *declarative* Foundry prompt agent. There is no image build — the
+# deploy publishes a new agent version through the Foundry Agents data-plane REST API.
+#
+# Pipeline: deploy-dev -> eval (gate) -> deploy-demo. The eval job runs the Foundry evaluation suite
+# against the freshly deployed dev agent and blocks promotion if any gating metric misses threshold.
+#
+# When evals=no, delete the `eval` job and change deploy-demo's `needs:` to `deploy-dev`.
+#
+# Trigger: manual dispatch only. Creating the agent never deploys it, and there is deliberately no
+# push, pull-request or schedule trigger. Run it from the Actions tab ("Run workflow") or by asking
+# the deploy skill. Anyone with permission to dispatch workflows in this repository can still run it.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-dev:
+    name: Deploy {{AGENT_NAME}} (dev)
+    runs-on: ubuntu-latest
+    environment: dev
+    defaults:
+      run:
+        working-directory: {{OUTPUT_DIR}}
+    env:
+      # Read by scripts/deploy-agent.ps1. Set these as per-environment variables; the deploy fails
+      # fast if a required one is unset. Include only the grounding variables your agent uses.
+      FOUNDRY_PROJECT_ENDPOINT: ${{ vars.FOUNDRY_PROJECT_ENDPOINT }}
+      AZURE_AI_MODEL_DEPLOYMENT_NAME: ${{ vars.AZURE_AI_MODEL_DEPLOYMENT_NAME }}
+      # grounding=fabric:
+      FABRIC_CONNECTION_ID: ${{ vars.FABRIC_CONNECTION_ID }}
+      FABRIC_SERVER_URL: ${{ vars.FABRIC_SERVER_URL }}
+      # grounding=mcp:
+      # MCP_SERVER_URL: ${{ vars.MCP_SERVER_URL }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure login with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy prompt agent (idempotent)
+        shell: pwsh
+        run: ./scripts/deploy-agent.ps1
+
+  eval:
+    name: Eval gate (dev)
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    environment: dev
+    defaults:
+      run:
+        working-directory: {{OUTPUT_DIR}}/evals
+    env:
+      AZURE_AI_PROJECT_ENDPOINT: ${{ vars.FOUNDRY_PROJECT_ENDPOINT }}
+      AZURE_AI_MODEL_DEPLOYMENT_NAME: ${{ vars.AZURE_AI_MODEL_DEPLOYMENT_NAME }}
+      AGENT_NAME: {{AGENT_NAME}}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install --quiet -r requirements.txt
+
+      - name: Azure login with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Run Foundry evaluation against dev (CI gate)
+        run: python run_evaluation.py --mode ci --dataset ci-smoke.jsonl
+
+      - name: Upload results snapshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: {{AGENT_NAME}}-eval-results
+          path: {{OUTPUT_DIR}}/evals/results/*.json
+          retention-days: 30
+
+  deploy-demo:
+    name: Deploy {{AGENT_NAME}} (demo)
+    needs: eval
+    runs-on: ubuntu-latest
+    environment: demo
+    defaults:
+      run:
+        working-directory: {{OUTPUT_DIR}}
+    env:
+      FOUNDRY_PROJECT_ENDPOINT: ${{ vars.FOUNDRY_PROJECT_ENDPOINT }}
+      AZURE_AI_MODEL_DEPLOYMENT_NAME: ${{ vars.AZURE_AI_MODEL_DEPLOYMENT_NAME }}
+      FABRIC_CONNECTION_ID: ${{ vars.FABRIC_CONNECTION_ID }}
+      FABRIC_SERVER_URL: ${{ vars.FABRIC_SERVER_URL }}
+      # grounding=mcp:
+      # MCP_SERVER_URL: ${{ vars.MCP_SERVER_URL }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure login with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy prompt agent (idempotent)
+        shell: pwsh
+        run: ./scripts/deploy-agent.ps1

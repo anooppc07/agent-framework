@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+# Prompt agent + client-executed function tools, SCBX shape. Adapted from microsoft-foundry/foundry-samples
+# (MIT), cli/prompt-agents/02-tools. The only change is the model: admin-connected, via the gateway.
+# The model emits a function_call; YOUR application runs it. See README for what that means for the gateway.
+
+requiredVersions:
+  azd: '>=1.36.0'
+  extensions:
+    azure.ai.agents: '>=1.0.0-beta.21'
+    azure.ai.projects: '>=1.0.0-beta.14'
+
+name: prompt-agent-tools
+services:
+  ai-project:
+    host: azure.ai.project
+
+  prompt-agent-tools:
+    host: azure.ai.agent
+    project: .
+    kind: prompt
+    name: prompt-agent-tools
+    description: A prompt agent that emits client-executed function tool calls.
+    model: ai-gateway/${GATEWAY_MODEL_NAME}
+    instructions: |
+      You are a helpful assistant. When the user asks about a support ticket or a currency
+      conversion, call the matching function tool. The calling application runs the function and
+      returns the result to you. Do not guess a result you have not been given.
+    toolChoice: auto
+    tools:
+      - type: function
+        name: get_ticket_status
+        description: Get the current status of a support ticket. Read-only.
+        parameters:
+          type: object
+          additionalProperties: false
+          properties:
+            ticket_id:
+              type: string
+              description: Ticket identifier, for example "T-1042".
+          required: [ticket_id]
+        strict: true
+      - type: function
+        name: convert_currency
+        description: Convert an amount from one currency to another at the current rate. Read-only.
+        parameters:
+          type: object
+          additionalProperties: false
+          properties:
+            amount:
+              type: number
+              description: Amount to convert.
+            from_currency:
+              type: string
+              description: ISO 4217 code, for example "THB".
+            to_currency:
+              type: string
+              description: ISO 4217 code, for example "USD".
+          required: [amount, from_currency, to_currency]
+        strict: true
+    env:
+      GATEWAY_MODEL_NAME: ${GATEWAY_MODEL_NAME}
+    uses:
+      - ai-project
+
+infra:
+  provider: microsoft.foundry

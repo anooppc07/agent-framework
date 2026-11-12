@@ -1,0 +1,12 @@
+langchain-azure-ai[hosting]>=1.2.4
+# Required transitively by langchain-azure-ai; declared so uv can resolve the prerelease.
+azure-ai-contentunderstanding>=1.2.0b2
+azure-ai-projects
+azure-identity
+langchain
+langchain-core
+langchain-openai
+langgraph
+python-dotenv
+# The prerelease above lets the resolver pick httpx 1.0.dev*, which breaks langgraph-sdk.
+httpx<1

@@ -1,0 +1,12 @@
+[project]
+name = "scbx-hosted-human-in-the-loop"
+version = "0.1.0"
+description = "SCBX hosted agent (Agent Framework, Responses): draft, pause for human review, approve/revise/reject. Models via the AI Gateway."
+requires-python = ">=3.13"
+dependencies = [
+    "agent-framework-foundry==1.16.1",
+    "agent-framework-foundry-hosting==1.0.0b261106",
+    "opentelemetry-instrumentation-httpx",
+    "azure-identity",
+    "python-dotenv",
+]

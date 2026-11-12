@@ -1,0 +1,198 @@
+{
+  "name": "card-dispute-router",
+  "agent_kind": "hosted",
+  "framework": "maf",
+  "framework_source": "declared by the spec",
+  "pattern": "router-specialists",
+  "pattern_status": "runnable-unvalidated",
+  "mode": "create-new",
+  "rationale": "Dispute intake and suspected-fraud reports are independent topics, so separate specialists answer each.",
+  "controls": [
+    {
+      "control_id": "identity-propagation",
+      "implementation": "declared",
+      "verification": "not-run",
+      "responsibility": "declared-requirement",
+      "not_applicable_reason": "",
+      "deployed_evidence": null,
+      "local_evidence": [],
+      "mechanisms": [],
+      "gaps": [],
+      "notes": "",
+      "component_refs": [],
+      "source_refs": [],
+      "test_refs": []
+    },
+    {
+      "control_id": "approved-tool-access",
+      "implementation": "declared",
+      "verification": "not-run",
+      "responsibility": "declared-requirement",
+      "not_applicable_reason": "",
+      "deployed_evidence": null,
+      "local_evidence": [],
+      "mechanisms": [],
+      "gaps": [],
+      "notes": "",
+      "component_refs": [],
+      "source_refs": [],
+      "test_refs": []
+    },
+    {
+      "control_id": "context-memory-isolation",
+      "implementation": "not-implemented",
+      "verification": "not-run",
+      "responsibility": "application",
+      "not_applicable_reason": "",
+      "deployed_evidence": null,
+      "local_evidence": [],
+      "mechanisms": [],
+      "gaps": [
+        "platform session defaults do not prove user or tenant isolation"
+      ],
+      "notes": "",
+      "component_refs": [],
+      "source_refs": [],
+      "test_refs": []
+    },
+    {
+      "control_id": "bounded-reasoning-retries",
+      "implementation": "not-implemented",
+      "verification": "not-run",
+      "responsibility": "application",
+      "not_applicable_reason": "",
+      "deployed_evidence": null,
+      "local_evidence": [],
+      "mechanisms": [],
+      "gaps": [],
+      "notes": "",
+      "component_refs": [],
+      "source_refs": [],
+      "test_refs": []
+    },
+    {
+      "control_id": "handoff-controls",
+      "implementation": "not-implemented",
+      "verification": "not-applicable",
+      "responsibility": "application",
+      "not_applicable_reason": "topology: a single-agent or router runs no control transfer between agents",
+      "deployed_evidence": null,
+      "local_evidence": [],
+      "mechanisms": [],
+      "gaps": [],
+      "notes": "",
+      "component_refs": [],
+      "source_refs": [],
+      "test_refs": []
+    },
+    {
+      "control_id": "safe-termination",
+      "implementation": "not-implemented",
+      "verification": "not-run",
+      "responsibility": "application",
+      "not_applicable_reason": "",
+      "deployed_evidence": null,
+      "local_evidence": [],
+      "mechanisms": [],
+      "gaps": [],
+      "notes": "",
+      "component_refs": [],
+      "source_refs": [],
+      "test_refs": []
+    },
+    {
+      "control_id": "traceability",
+      "implementation": "declared",
+      "verification": "not-run",
+      "responsibility": "declared-requirement",
+      "not_applicable_reason": "",
+      "deployed_evidence": null,
+      "local_evidence": [],
+      "mechanisms": [],
+      "gaps": [],
+      "notes": "",
+      "component_refs": [],
+      "source_refs": [],
+      "test_refs": []
+    },
+    {
+      "control_id": "audit-evidence",
+      "implementation": "not-implemented",
+      "verification": "not-run",
+      "responsibility": "application",
+      "not_applicable_reason": "",
+      "deployed_evidence": null,
+      "local_evidence": [],
+      "mechanisms": [],
+      "gaps": [],
+      "notes": "",
+      "component_refs": [],
+      "source_refs": [],
+      "test_refs": []
+    }
+  ],
+  "capabilities": [
+    {
+      "name": "session-history",
+      "responsibility": "platform",
+      "summary": "Foundry-managed session store keeps sessions and history; no custom session code is delivered.",
+      "limits": "retention, deletion, tenant authorization and business-case state are separate decisions",
+      "basis": "provided-by-template"
+    },
+    {
+      "name": "invocation-protocol",
+      "responsibility": "platform",
+      "summary": "The standard SDK hosting adapter handles invocation, streaming and continuation.",
+      "limits": "no custom protocol code in this skill",
+      "basis": "provided-by-template"
+    },
+    {
+      "name": "context-propagation",
+      "responsibility": "platform",
+      "summary": "Host-supplied conversation context reaches the application; specialist instructions stay scoped.",
+      "limits": "local context tests are not hosted isolation proof",
+      "basis": "provided-by-template"
+    },
+    {
+      "name": "bounded-routing",
+      "responsibility": "application",
+      "summary": "Finite classify then at most one tool-less specialist run.",
+      "limits": "underlying SDK/HTTP retries, duration, cost, token limits and cancellation are not bounded",
+      "basis": "provided-by-template"
+    },
+    {
+      "name": "refusal",
+      "responsibility": "application",
+      "summary": "Blank or unroutable requests have an explicit refusal outcome.",
+      "limits": "no timeout, exception or cancellation recovery; not safe business-action termination",
+      "basis": "provided-by-template"
+    },
+    {
+      "name": "release-evidence",
+      "responsibility": "shared",
+      "summary": "Generated evaluation and pipeline artifacts are declarations until executed.",
+      "limits": "evaluating a candidate version is not evidence that every runtime or security control passed",
+      "basis": "provided-by-template"
+    }
+  ],
+  "tools": [],
+  "session": {
+    "required": "enabled",
+    "declared": "enabled",
+    "observed": "not-observed",
+    "observed_evidence": null,
+    "owner": "platform (Foundry-managed session store via the SDK hosting integration)",
+    "provenance": "microsoft/agent-framework 6b675d68 packages/foundry_hosting README 'Agent Sessions'; pinned agent-framework-foundry-hosting release; hosted/assets/preflight.py (source check only)",
+    "separate_concerns": [
+      "semantic long-term memory",
+      "business-case state",
+      "tenant authorization",
+      "retention and deletion policy"
+    ],
+    "blocks_readiness": true
+  },
+  "evaluation_status": "unconfigured",
+  "pipeline_status": "selected-not-executed",
+  "gaps": [],
+  "claims_implementation": false
+}

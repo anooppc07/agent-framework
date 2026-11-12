@@ -1,0 +1,13 @@
+[project]
+name = "scbx-hosted-foundry-memory"
+version = "0.1.0"
+description = "SCBX hosted agent (Agent Framework, Responses) with a Foundry Memory Store. Agent model calls go through the AI Gateway."
+requires-python = ">=3.13"
+dependencies = [
+    "agent-framework-foundry==1.16.1",
+    "agent-framework-foundry-hosting==1.0.0b261106",
+    "opentelemetry-instrumentation-httpx",
+    "azure-identity",
+    "azure-ai-projects",
+    "python-dotenv",
+]
