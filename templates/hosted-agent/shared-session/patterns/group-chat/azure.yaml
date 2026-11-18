@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+# Hosted agent (Agent Framework, Responses 2.0.0): group-chat with conversation state in a PortCo-owned Cosmos DB, SCBX shape.
+# Hosting shape adapted from microsoft-foundry/foundry-samples (MIT). The orchestration and the Cosmos stores are original.
+# Models come from the AI Gateway; no model deployment here. See templates/_gateway/GATEWAY-CONTRACT.md.
+# EXCEPTION: Cosmos DB holds the state. It is in the KB's Foundry landing-zone list, but this template's use of it is not
+# yet signed off; see ../../README.md.
+
+requiredVersions:
+  azd: '>=1.27.1'
+  extensions:
+    azure.ai.agents: '>=1.0.0-beta.9'
+name: scbx-hosted-shared-session-group-chat
+services:
+  ai-project:
+    host: azure.ai.project
+  scbx-hosted-shared-session-group-chat:
+    host: azure.ai.agent
+    project: src/agent
+    language: python
+    codeConfiguration:
+      runtime: python_3_13
+      entryPoint: main.py
+    uses:
+      - ai-project
+    kind: hosted
+    name: scbx-hosted-shared-session-group-chat
+    displayName: SCBX Hosted Agent (Shared Session - Group Chat)
+    description: Agent Framework group chat (several agents in one room). Everyone sees the whole room, so participants share one clearance level. State lives in a Cosmos DB the PortCo owns; model calls go through the AI Gateway.
+    protocols:
+      - protocol: responses
+        version: 2.0.0
+    env:
+      PYTHONNOUSERSITE: "1"
+      GATEWAY_MODELS_BASE_URL: ${GATEWAY_MODELS_BASE_URL}
+      GATEWAY_MODEL_NAME: ${GATEWAY_MODEL_NAME}
+      GATEWAY_TOKEN_SCOPE: ${GATEWAY_TOKEN_SCOPE}
+      # The cosmos layer exports the first two; the post-deploy hook grants the agent identity its role.
+      AZURE_COSMOS_ENDPOINT: ${AZURE_COSMOS_ENDPOINT}
+      AZURE_COSMOS_DATABASE_NAME: ${AZURE_COSMOS_DATABASE_NAME}
+      TENANT_ID: ${TENANT_ID}
+      APP_ENV: production
+      SCOPE_HASH_PEPPER: ${SCOPE_HASH_PEPPER}   # from Key Vault; 32+ characters, or the agent refuses to start
+      FACT_TTL_SECONDS: ${FACT_TTL_SECONDS=86400}
+      # Keep prompts and replies out of traces (R7). Both lines are needed; see ../../../observability/README.md.
+      OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT: 'false'
+      ENABLE_SENSITIVE_DATA: 'false'
+    container:
+      resources:
+        cpu: '0.5'
+        memory: 1Gi
+hooks:
+  postdeploy:
+    windows:
+      shell: pwsh
+      run: ../../hooks/Set-CosmosAgentAccess.ps1
+    posix:
+      shell: sh
+      run: ../../hooks/postdeploy.sh
+infra:
+  layers:
+    - provider: microsoft.foundry
+      path: infra/foundry
+      name: foundry
+    - provider: terraform
+      path: ../../infra/cosmos
+      name: cosmos
+      dependsOn:
+        - foundry

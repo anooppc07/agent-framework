@@ -1,0 +1,17 @@
+[project]
+name = "scbx-hosted-shared-session-group-chat"
+version = "0.1.0"
+description = "SCBX hosted agent (Agent Framework, Responses): group-chat with state in a PortCo-owned Cosmos DB. Models via the AI Gateway."
+requires-python = ">=3.13"
+dependencies = [
+    "agent-framework-core==1.26.0",
+    "agent-framework-foundry==1.16.2",
+    "agent-framework-foundry-hosting==1.0.0b261112",
+    "agent-framework-orchestrations==1.4.2",
+    "agent-framework-azure-cosmos==1.0.0b261112",
+    "azure-cosmos==4.17.1",
+    "azure-identity==1.27.0",
+    "opentelemetry-instrumentation-httpx",
+    "python-dotenv",
+    "pyyaml",
+]

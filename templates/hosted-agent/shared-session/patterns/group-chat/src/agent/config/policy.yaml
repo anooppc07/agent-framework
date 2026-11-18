@@ -1,0 +1,81 @@
+# Who may READ and WRITE which shared facts.
+# Deny-by-default: an agent sees nothing it is not listed for.
+# Keep this file in source control and review changes like code (or move it to OPA / App Config).
+#
+# SCOPE OF THIS POLICY (verification F10): it governs the shared FACTS channel only.
+# It does NOT filter a live handoff or group-chat conversation: everything said there is
+# visible to every participant. Choose the pattern per agent pair accordingly (README).
+#
+# Every written key must be readable by at least one agent (tests/test_policy.py enforces it).
+
+classifications:
+  # Max data classification an agent may receive. public < internal < confidential < pii
+  order: [public, internal, confidential, pii]
+
+agents:
+  orchestrator:               # your app/service identity that seeds tasks
+    read:  [task_goal, analysis_summary, draft, review_verdict, refund_status]
+    write: [task_goal]
+    max_classification: internal
+
+  triage:
+    read:  [customer_intent, order_id, refund_status, resolution]   # so triage can tell the user (F15)
+    write: [customer_intent, order_id, customer_tier]
+    max_classification: internal
+
+  billing:
+    read:  [order_id, customer_id, customer_tier, refund_reason]
+    write: [refund_reason, refund_status]
+    max_classification: pii
+
+  tech_support:
+    read:  [customer_intent, order_id, device_model]
+    write: [device_model, resolution]
+    max_classification: internal
+
+  researcher:
+    read:  [task_goal]
+    write: [research_findings]
+    max_classification: internal
+
+  analyst:
+    read:  [task_goal, research_findings]
+    write: [analysis_summary]
+    max_classification: internal
+
+  writer:
+    read:  [task_goal, analysis_summary]
+    write: [draft]
+    max_classification: internal
+
+  critic:
+    read:  [task_goal]          # critic never sees raw research - only the draft it is handed
+    write: [review_verdict]
+    max_classification: public
+
+  reviewer:                   # group-chat reviewer, cleared to "internal" like its room-mates
+    read:  [task_goal]
+    write: [review_verdict]
+    max_classification: internal
+
+  assistant:
+    read:  [user_preferences]
+    write: [user_preferences]
+    max_classification: internal
+
+# Classification of each fact key (unlisted keys default to "confidential").
+facts:
+  customer_intent:   internal
+  order_id:          internal
+  customer_tier:     internal
+  customer_id:       pii
+  refund_reason:     confidential
+  refund_status:     internal
+  device_model:      internal
+  resolution:        internal
+  task_goal:         public
+  research_findings: internal
+  analysis_summary:  internal
+  draft:             internal
+  review_verdict:    public
+  user_preferences:  internal
