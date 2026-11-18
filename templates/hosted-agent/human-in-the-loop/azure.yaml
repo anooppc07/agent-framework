@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
 # Hosted agent (Agent Framework, Responses 2.0.0): human-in-the-loop review, SCBX shape.
-# Behaviour ported from foundry-samples langgraph/responses/07-human-in-the-loop (MIT) to Agent Framework.
+# Adapted from microsoft-foundry/foundry-samples (MIT).
 # Models come from the AI Gateway; no model deployment here. See templates/_gateway/GATEWAY-CONTRACT.md.
 
 requiredVersions:

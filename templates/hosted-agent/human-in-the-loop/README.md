@@ -1,9 +1,8 @@
 # Hosted agent: human in the loop (Agent Framework)
 
 An Agent Framework workflow (`kind: hosted`, Responses 2.0.0) that **drafts a proposal, pauses for a human
-review, and takes approve, revise or reject**. It is the Agent Framework version of upstream
-`langgraph/responses/07-human-in-the-loop` (SCBX is not on LangGraph). The model is reached through the
-AI Gateway, never the project endpoint.
+review, and takes approve, revise or reject**. The model is reached through the AI Gateway, never the
+project endpoint.
 
 ```
 task -> drafter -> reviewer --approve--> publish the draft
@@ -12,21 +11,20 @@ task -> drafter -> reviewer --approve--> publish the draft
                       +--reject--> "REJECTED: no draft was published."
 ```
 
-LangGraph `interrupt()` is `ctx.request_info(...)` here; the resume is a `@response_handler`. See `review_flow.py`.
+The workflow pauses with `ctx.request_info(...)` and resumes in a `@response_handler`. See `review_flow.py`.
 
-## The client contract (differs from the LangGraph sample)
+## The client contract
 
-| | LangGraph 07 | This template (Agent Framework host) |
-|---|---|---|
-| Pause is shown as | `mcp_approval_request` (+ a paired `function_call`) | a `function_call` item named `request_info` |
-| Pause details | in `arguments` | `arguments` = `{"request_id": <call_id>, "request": {"draft": ..., "round": n}}` |
-| Approve | `mcp_approval_response` `approve: true` | `function_call_output` with `{"action": "approve"}` |
-| Revise | `function_call_output` `{"resume": {"feedback": ...}}` | `function_call_output` with `{"action": "revise", "feedback": "..."}` |
-| Reject | `response.failed`, `code=interrupt_rejected` | **completed** response whose text is `REJECTED: no draft was published.` |
+| Step | What the client sees or sends |
+|---|---|
+| Pause | A `function_call` item named `request_info`. Its `arguments` are `{"request_id": <call_id>, "request": {"draft": ..., "round": n}}` |
+| Approve | `function_call_output` with `{"action": "approve"}` |
+| Revise | `function_call_output` with `{"action": "revise", "feedback": "..."}` |
+| Reject | `function_call_output` with `{"action": "reject"}`. The response **completes** and its text is `REJECTED: no draft was published.` |
 
-A client written for the LangGraph sample must change. The reject difference is deliberate: this host turns any
-exception into a generic `server_error` that a client cannot tell from an outage, so a rejection is a clearly
-marked normal result instead. Reply with the same `conversation.id` and the `call_id` of the pause:
+A rejection is a normal, clearly marked result and not an error, because this host turns any exception into a
+generic `server_error` that a client cannot tell from an outage. Reply with the same `conversation.id` and the
+`call_id` of the pause:
 
 ```json
 {"conversation": {"id": "c1"},

@@ -1,0 +1,13 @@
+[project]
+name = "scbx-hosted-orchestration"
+version = "0.1.0"
+description = "SCBX hosted agent (Agent Framework, Responses): sequential chain or group chat, one session per agent. Models via the AI Gateway."
+requires-python = ">=3.13"
+dependencies = [
+    "agent-framework-foundry==1.16.1",
+    "agent-framework-foundry-hosting==1.0.0b261106",
+    "agent-framework-orchestrations==1.4.2",
+    "opentelemetry-instrumentation-httpx",
+    "azure-identity",
+    "python-dotenv",
+]

@@ -1,8 +1,7 @@
-# Copyright (c) Microsoft. All rights reserved. (behaviour ported from microsoft-foundry/foundry-samples, MIT,
-# langgraph/responses/07-human-in-the-loop; written for Microsoft Agent Framework)
+# Copyright (c) Microsoft. All rights reserved. (adapted from microsoft-foundry/foundry-samples, MIT)
 """The review workflow: draft -> pause for review -> approve | revise | reject.
 
-LangGraph's `interrupt()` becomes `ctx.request_info(...)` plus a `@response_handler`. The model is reached
+The workflow pauses with `ctx.request_info(...)` and resumes in a `@response_handler`. The model is reached
 through the AI Gateway (gateway_client), never the project endpoint (R1).
 
 Wire format (Responses protocol, Agent Framework host): the pause is a `function_call` output item.

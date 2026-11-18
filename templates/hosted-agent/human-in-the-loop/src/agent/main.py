@@ -1,5 +1,4 @@
-# Copyright (c) Microsoft. All rights reserved. (behaviour ported from microsoft-foundry/foundry-samples, MIT,
-# langgraph/responses/07-human-in-the-loop; written for Microsoft Agent Framework)
+# Copyright (c) Microsoft. All rights reserved. (adapted from microsoft-foundry/foundry-samples, MIT)
 """Host the review workflow on the Responses protocol. The workflow itself is in review_flow.py."""
 
 from agent_framework_foundry_hosting import CheckpointStoreProvider, ResponsesHostServer, WorkflowTurn
