@@ -210,6 +210,32 @@ Roles by person:
 | The deployed agent | *Cosmos DB Built-in Data Contributor* | The one Cosmos database, granted by `hooks/postdeploy.sh` |
 | The deployed agent | Whatever the AI Gateway requires for `GATEWAY_TOKEN_SCOPE` | **DataX: not in the KB** |
 
+## How an agent reaches its data
+
+The platform's model is that an agent reaches things through **tools or MCP servers**, using the **agent's own identity**. Foundry holds
+the connection to each tool, and the AI Gateway holds any credential the tool needs, so the agent never sees one (KB 02 "Tool call
+detail", KB 07 "MCP lifecycle"). The connection is made once: register the tool, publish it on the gateway, then connect it to the
+Foundry project.
+
+`shared-session` is **different**, and the difference is on purpose:
+
+| | Tools and MCP (the platform model) | The Cosmos access in these patterns |
+|---|---|---|
+| How the agent reaches it | Through a Foundry connection to a tool on the gateway | Directly: the agent's code builds a Cosmos client (`cosmos_client()` in `app/memory/fact_store.py`) |
+| Whose identity | The agent's (or the project's, for a prompt agent's connection) | The agent's own managed identity |
+| Who holds the credential | The gateway | Nobody: key access is off, so access is by identity only |
+| Who sets up the access | The tool's owner and the Foundry connection | `hooks/postdeploy.sh`, which grants the agent's identity a Cosmos role on one database |
+| Where the rules are enforced | At the gateway | In the agent's own code (`policy.yaml`) |
+
+Both use the agent's identity. What differs is who sits between the agent and the data. With a tool, the gateway does. Here, nothing does,
+so the policy and the partition key are the controls. They protect against a model or an honest mistake, not against code in the same
+process that chose to bypass them.
+
+**To move this onto the platform model,** the facts store would be published as a tool or MCP server on the gateway, and the agent would
+reach it through a Foundry connection. That is not built here. Two things would have to be settled first: how the gateway tells one agent
+from another, since today every agent in a template shares one identity, and whether the tool's checks would still apply to the live
+conversation, which `policy.yaml` does not cover today.
+
 ## Behaviour to be aware of
 
 1. **A failed turn blocks its conversation for good.** The host will not replay a turn that may have already run a tool such as
