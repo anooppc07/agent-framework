@@ -1,15 +1,20 @@
-# Sample: single agent with durable memory
+# single-agent: one agent that remembers a user
 
-One agent that remembers a user across restarts. Its history is private to it, in Cosmos, and survives a new process.
-**This is a library sample, not a hosted template**: you run it in a script, a job, or your own API. Read the
-[parent README](../../README.md) first.
+One agent whose history is private to it, in Cosmos, and survives a new process. Read the [parent README](../../README.md) first.
 
-## Why it is not hosted
+```
+run 1:  "Hi, I prefer answers in bullet points."   -> the agent saves the preference
+run 2:  "What format do I prefer?"                 -> "You prefer answers in bullet points."
+```
 
-A hosted regular agent cannot tell its callers apart. The host builds the agent once, so it has one fixed scope, and no tool or
-provider receives the trusted user. In a test, a second user who sent the first user's conversation id was shown the first user's
-facts and messages. A hosted version would have to be a one-step workflow, whose factory does receive the request (see
-[`../handoff/src/agent/main.py`](../handoff/src/agent/main.py)). **That version has not been run.**
+## Use it when / do not use it when
+
+Use it for a script, a job or your own API that serves one person at a time and should remember them.
+
+Do not use it as a hosted agent. A hosted regular agent cannot tell its callers apart: the host builds the agent once, so it has one
+fixed scope, and no tool or provider receives the trusted user. In a test, a second user who sent the first user's conversation id
+was shown the first user's facts and messages. A hosted version would have to be a one-step workflow, whose factory does receive the
+request (see [`../handoff/src/agent/main.py`](../handoff/src/agent/main.py)). **That version has not been run.**
 
 ## How it works
 
@@ -17,24 +22,21 @@ facts and messages. A hosted version would have to be a one-step workflow, whose
 same conversation resumes after a restart. It can save stable preferences with `publish_fact` (allowed by `policy.yaml`).
 Blank messages are refused before the model is called: the library would otherwise store an empty turn and still call the model.
 
-## Identity in this sample
-
-You run it, so you decide who the end user is.
-
-| # | Identity | How it is handled here |
-|---|---|---|
-| 1 | **The end user** | `demo_scope()` hard-codes `demo-user`. **Replace it.** In an API, build `RequestScope` per request from the caller's validated Entra token (tenant and user from claims), never from the request body. Because the scope is part of every key, a wrong user id here puts one person's memory in another's partition. |
-| 2 | **The identity that runs the sample** | Locally, `az login` through `DefaultAzureCredential` (`APP_ENV=dev`). Deployed, the host's managed identity through `ManagedIdentityCredential`. Either needs *Cosmos DB Built-in Data Contributor* on the database. |
-| 3 | **Model access** | `gateway_client.chat_client()` sends an Entra token for `GATEWAY_TOKEN_SCOPE` to the AI Gateway. |
-| 4 | **The tenant** | `TENANT_ID`. |
-
 ## Run it
 
-See [Run a library sample locally](../../README.md#run-a-library-sample-locally). Then:
+Set up Cosmos and your environment as in [Run a pattern locally](../../README.md#run-single-agent-reflection-sequential-pipeline-or-agent-as-tool-locally). Then:
 
 ```bash
+cd patterns/single-agent
 python main.py        # run it twice: the second run remembers the first
 ```
+
+## Identity
+
+The four identities are in the [parent README](../../README.md#identity-who-is-who). What differs here: **you decide who the end user
+is.** `demo_scope()` hard-codes `demo-user`; **replace it.** In an API, build `RequestScope` per request from the caller's validated
+Entra token (tenant and user from claims), never from the request body. The scope is part of every key, so a wrong user id puts one
+person's memory in another's partition. It runs under `az login` locally (`APP_ENV=dev`) and the managed identity when deployed.
 
 ## Status
 

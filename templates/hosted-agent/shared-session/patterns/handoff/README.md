@@ -1,8 +1,19 @@
-# Hosted agent: handoff (triage to billing or tech support)
+# handoff: one conversation, the speaker changes
 
 A hosted Agent Framework agent (`kind: hosted`, Responses 2.0.0). A **triage** agent hands a customer to **billing** or **tech
 support**. The live conversation is shared by every participant, which is what makes it a handoff. State lives in a Cosmos DB
 the PortCo owns; model calls go through the AI Gateway. Read the [parent README](../../README.md) first.
+
+```
+User:     "I was charged twice for order 8812. Please refund the duplicate 450 THB."
+triage    -> publishes order_id and customer_intent, hands off to billing
+billing   -> asks to run submit_refund   (the host pauses and returns an approval request)
+User:     approves, in the same conversation
+billing   -> "Refund queued for 8812: 450 THB"
+```
+
+The routes are `triage -> billing | tech_support`, and `billing` or `tech_support` can hand back to `triage`. The workflow is
+`src/agent/workflows/handoff.py`.
 
 ## Use it when / do not use it when
 
@@ -27,14 +38,13 @@ Edit the agents' instructions and the routing in `workflows/handoff.py`. `submit
 call, and make that call idempotent on the order and amount, because an approval plus a resume guarantees **once per
 checkpoint, not once in the world**.
 
-## Identity in this template
+## Identity
 
-| # | Identity | How it is handled here |
-|---|---|---|
-| 1 | **The end user** | `scope_from()` takes the host's trusted `request.scope.user_id`. A hosted request without one raises. The conversation id may come from the caller, but it is always hashed together with the trusted user, so **someone else's conversation id gives an empty, separate partition** (tested: a second user got nothing from the first). |
-| 2 | **The agent's identity** | Needs *Cosmos DB Built-in Data Contributor* on the database. `../../hooks/postdeploy.sh` (or `Set-CosmosAgentAccess.ps1` on Windows) looks up the agent's `instance_identity.principal_id` and assigns the role on that one database. |
-| 3 | **Model access** | `gateway_client.chat_client()` signs in as the agent and sends an Entra token for `GATEWAY_TOKEN_SCOPE` to the AI Gateway. |
-| 4 | **The tenant** | `TENANT_ID`, hashed into every key. |
+The four identities are in the [parent README](../../README.md#identity-who-is-who). What differs here: `scope_from()` takes the
+host's trusted `request.scope.user_id`, and a hosted request without one raises. The conversation id may come from the caller, but
+it is always hashed together with the trusted user, so **someone else's conversation id gives an empty, separate partition**
+(tested: a second user got nothing from the first). `../../hooks/postdeploy.sh` (or `Set-CosmosAgentAccess.ps1` on Windows) grants
+the agent's identity its Cosmos role on that one database.
 
 Who may approve a refund: **the same user who started the conversation.** The host validates a reply against that user's
 checkpoint before any tool runs. In a test, a second user who sent the first user's approval id was refused with *"Workflow
@@ -43,10 +53,8 @@ a different person (a supervisor) must approve, that needs its own design.
 
 ## Fill in
 
-`GATEWAY_MODELS_BASE_URL`, `GATEWAY_MODEL_NAME`, `GATEWAY_TOKEN_SCOPE` (DataX supplies all three), `TENANT_ID`, and
-`SCOPE_HASH_PEPPER` (from Key Vault; 32+ characters). For the Terraform layer, `COSMOS_ACCOUNT_NAME`,
-`PRIVATE_ENDPOINT_SUBNET_ID` and `COSMOS_PRIVATE_DNS_ZONE_ID` (the last two come from the platform stamp); see the parent
-README's Azure setup table.
+The settings are listed in the parent README under [Settings to fill in](../../README.md#settings-to-fill-in). This template reads
+them from `src/agent/.env.example` (copy it to `.env`) and, when deployed, from `azure.yaml`.
 
 ## Run it locally
 

@@ -1,12 +1,26 @@
-# Sample: sequential pipeline (through facts)
+# sequential-pipeline: stages that pass facts, not conversation
 
 A researcher, an analyst and a writer run in order. Each publishes a small result as a **fact**, and the next stage reads only the
-facts `policy.yaml` lists for it. The writer never sees the raw research, only the analyst's summary. **This is a library sample,
-not a hosted template.** Read the [parent README](../../README.md) first.
+facts `policy.yaml` lists for it. Read the [parent README](../../README.md) first.
 
-Use this explicit version when the full conversation must not flow down the chain. MAF's `SequentialBuilder` passes the whole
-conversation down by default, which is fine when that is acceptable; the repo's
-[`orchestration`](../../../orchestration) template covers that.
+```
+researcher -> publishes research_findings
+analyst    -> reads research_findings, publishes analysis_summary
+writer     -> reads analysis_summary only, publishes draft      (it never sees the raw research)
+```
+
+## Use it when / do not use it when
+
+Use it when the full conversation must **not** flow down the chain, so a later stage sees only a small result from the one before.
+
+Do not use it if passing the whole conversation is fine. MAF's `SequentialBuilder` does that by default; the repo's
+[`orchestration`](../../../orchestration) template covers it.
+
+## How it works
+
+`main.py` seeds `task_goal` once, then runs each stage in order with `agent.run("Do your step now.")`. A stage that fails stops the
+pipeline. The stages are the `stages` list in `main()`: edit the names and instructions there, and make each name an agent in
+`config/policy.yaml`.
 
 ## What the tests found, and what the sample does about it
 
@@ -17,22 +31,24 @@ conversation down by default, which is fine when that is acceptable; the repo's
 | **A re-run in the same conversation can skip publishing.** Sessions are deterministic, so a second run replays the first run's history; in a test two stages made one model call each, never called `publish_fact`, and the old facts silently stayed | A **new conversation id per run** (`uuid`). Otherwise clear the old facts first with `SharedFactStore.purge_conversation` |
 | A wrapper that swallowed a stage failure let the next stage run on missing input | A failure stops the pipeline: it is not caught |
 
-## Identity in this sample
+## Run it
 
-| # | Identity | How it is handled here |
-|---|---|---|
-| 1 | **The end user** | `demo_scope()` hard-codes `demo-user`. **Replace it** with a scope built per request from the caller's validated Entra token. The scope is hashed into the facts partition, so a second user with the same conversation id reads nothing (tested). |
-| 2 | **The identity that runs the sample** | `az login` locally (`APP_ENV=dev`); the managed identity when deployed. It needs *Cosmos DB Built-in Data Contributor* on the database. |
-| 3 | **Model access** | `gateway_client.chat_client()` with an Entra token for `GATEWAY_TOKEN_SCOPE`. |
-| 4 | **The tenant** | `TENANT_ID`. |
+Set up Cosmos and your environment as in [Run a pattern locally](../../README.md#run-single-agent-reflection-sequential-pipeline-or-agent-as-tool-locally). Then:
+
+```bash
+cd patterns/sequential-pipeline
+python main.py
+```
+
+## Identity
+
+The four identities are in the [parent README](../../README.md#identity-who-is-who). What differs here: `demo_scope()` hard-codes
+`demo-user`; **replace it** with a scope built per request from the caller's validated Entra token. The scope is hashed into the
+facts partition, so a second user with the same conversation id reads nothing (tested).
 
 All three stages run under the **same** identity. Their separation is the `policy.yaml` entry for each stage name, which controls
 which facts it can read and write, **not** a separate identity or role. The seed `task_goal` is published as `orchestrator`: the
 caller of `publish` names the agent, so this check protects against a mistake, not against code that chooses to use another name.
-
-## Run it
-
-See [Run a library sample locally](../../README.md#run-a-library-sample-locally), then `python main.py`.
 
 ## Status
 

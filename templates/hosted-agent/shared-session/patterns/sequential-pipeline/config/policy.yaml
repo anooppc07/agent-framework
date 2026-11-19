@@ -6,7 +6,7 @@
 # It does NOT filter a live handoff or group-chat conversation: everything said there is
 # visible to every participant. Choose the pattern per agent pair accordingly (README).
 #
-# Every written key must be readable by at least one agent (tests/test_policy.py enforces it).
+# Every written key should be readable by at least one agent. No test checks this yet.
 
 classifications:
   # Max data classification an agent may receive. public < internal < confidential < pii

@@ -1,8 +1,16 @@
-# Hosted agent: group chat
+# group-chat: several agents in one room
 
 A hosted Agent Framework agent (`kind: hosted`, Responses 2.0.0). Several agents talk in **one room** and every participant reads
 the whole transcript. A fixed round-robin order and a hard round limit keep it bounded. State lives in a Cosmos DB the PortCo
 owns; model calls go through the AI Gateway. Read the [parent README](../../README.md) first.
+
+```
+User:       "Decide whether to move our nightly batch jobs to Azure Container Apps Jobs."
+researcher -> facts       analyst -> trade-offs       reviewer -> challenges       writer -> the decision, in three sentences
+(this order repeats until MAX_ROUNDS = 8; the first message uses the whole budget, see Follow-up messages)
+```
+
+The room is `ROOM` in `src/agent/main.py`. There is no separate workflow file: the room, its guards and the hosting are all in `main.py`.
 
 ## Use it when / do not use it when
 
@@ -57,23 +65,20 @@ What to do about it:
 share one `max_classification`. The sample room is a researcher, an analyst, a reviewer and a writer, all `internal`. Do not add
 `critic`: it is capped at `public` and the room is refused.
 
-## Identity in this template
+## Identity
 
-| # | Identity | How it is handled here |
-|---|---|---|
-| 1 | **The end user** | `scope_from()` takes the host's trusted `request.scope.user_id` (a hosted request without one raises). The conversation id is hashed with it, so someone else's conversation id gives an empty, separate room (tested). |
-| 2 | **The agent's identity** | *Cosmos DB Built-in Data Contributor* on the one database, granted by `../../hooks/postdeploy.sh` from the agent's `instance_identity.principal_id`. |
-| 3 | **Model access** | `gateway_client.chat_client()` signs in as the agent and sends an Entra token for `GATEWAY_TOKEN_SCOPE` to the AI Gateway. |
-| 4 | **The tenant** | `TENANT_ID`, hashed into every key. |
+The four identities are in the [parent README](../../README.md#identity-who-is-who). What differs here: `scope_from()` takes the
+host's trusted `request.scope.user_id` (a hosted request without one raises). The conversation id is hashed with it, so someone
+else's conversation id gives an empty, separate room (tested). `../../hooks/postdeploy.sh` grants the agent's identity its Cosmos
+role on the one database.
 
 **Every participant runs as the same agent identity.** There is no per-participant Azure identity. What separates participants is
 the `policy.yaml` entry for each name, which controls only which facts each one can read and write.
 
 ## Fill in
 
-`GATEWAY_MODELS_BASE_URL`, `GATEWAY_MODEL_NAME`, `GATEWAY_TOKEN_SCOPE` (DataX supplies all three), `TENANT_ID`, `SCOPE_HASH_PEPPER`
-(Key Vault, 32+ characters), and for the Terraform layer `COSMOS_ACCOUNT_NAME`, `PRIVATE_ENDPOINT_SUBNET_ID` and
-`COSMOS_PRIVATE_DNS_ZONE_ID` (the last two come from the platform stamp); see the parent README's Azure setup table.
+The settings are listed in the parent README under [Settings to fill in](../../README.md#settings-to-fill-in). This template reads
+them from `src/agent/.env.example` (copy it to `.env`) and, when deployed, from `azure.yaml`.
 
 ## Run it locally
 
