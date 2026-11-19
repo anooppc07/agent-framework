@@ -5,7 +5,7 @@ set -eu
 cd "$(dirname "$0")"
 mode="${1:-copy}"
 status=0
-for target in patterns/handoff/src/agent patterns/group-chat/src/agent patterns/single-agent patterns/reflection patterns/sequential-pipeline; do
+for target in patterns/handoff/src/agent patterns/group-chat/src/agent patterns/single-agent patterns/reflection patterns/sequential-pipeline patterns/agent-as-tool; do
   [ -d "$target" ] || continue
   if [ "$mode" = "--check" ]; then
     if ! diff -rq -x '__pycache__' common/app "$target/app" >/dev/null 2>&1 \
